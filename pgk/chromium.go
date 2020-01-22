@@ -30,10 +30,12 @@ type ChromiumWrapper struct {
 	OutputDirectory string
 }
 
-func (c *ChromiumWrapper) DownloadPDF(documentId int, fileName string, fallbackOutput string) error {
+func (c *ChromiumWrapper) DownloadPDF(documentId int, fileName string, fallbackOutput string) (string, error) {
 	if len(c.OutputDirectory) > 0 {
 		fallbackOutput = c.OutputDirectory
 	}
+
+	outputPath := path.Join(fallbackOutput, strings.TrimSuffix(fileName, filepath.Ext(fileName))+".pdf")
 
 	cmdContext, _ := context.WithDeadline(context.TODO(), time.Now().Add(Timeout))
 	cmd := exec.CommandContext(
@@ -44,8 +46,8 @@ func (c *ChromiumWrapper) DownloadPDF(documentId int, fileName string, fallbackO
 		"--virtual-time-budget=2000",
 		"--timeout=6000",
 		"--headless",
-		fmt.Sprintf("--print-to-pdf=%s", path.Join(fallbackOutput, strings.TrimSuffix(fileName, filepath.Ext(fileName))+".pdf")),
+		fmt.Sprintf("--print-to-pdf=%s", outputPath),
 		fmt.Sprintf("http://0.0.0.0:%d/%d", c.Port, documentId),
 	)
-	return cmd.Run()
+	return outputPath, cmd.Run()
 }

@@ -22,7 +22,8 @@ func main() {
 			fmt.Println("found environment variable GHMARK_PORT with non-int value hence using default port")
 		}
 	}
-	fmt.Println("running on port " + strconv.Itoa(port))
+
+	fmt.Println("internal server running on port " + strconv.Itoa(port))
 
 	fileWG := &sync.WaitGroup{}
 
@@ -58,8 +59,10 @@ func main() {
 				_, _ = writer.Write(compile)
 			})
 
-			if err := chromiumClient.DownloadPDF(i, path.Base(filePath), fileDir); err != nil {
+			if output, err := chromiumClient.DownloadPDF(i, path.Base(filePath), fileDir); err != nil {
 				fmt.Printf("could not download pdf for %s: %s\n", filePath, err.Error())
+			} else {
+				fmt.Printf("Compiled pdf file %s to %s", filePath, output)
 			}
 		}()
 	}

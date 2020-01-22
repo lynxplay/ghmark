@@ -3,6 +3,7 @@ package pgk
 import (
 	"fmt"
 	"golang.org/x/net/context"
+	"html/template"
 	"os"
 	"os/exec"
 	"path"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-const Timeout = time.Minute
+const Timeout = time.Second * 5
 
 func NewChromiumWrapper(port int) *ChromiumWrapper {
 	outputDir := ""
@@ -19,31 +20,50 @@ func NewChromiumWrapper(port int) *ChromiumWrapper {
 		outputDir = s
 	}
 
+	templateString := "{{.FileName}}.pdf"
+	if s, ok := os.LookupEnv("GHMARK_OUTPUT_TEMPLATE"); ok {
+		templateString = s
+	}
+
+	t, _ := template.New("filename").Parse(templateString)
+
 	return &ChromiumWrapper{
-		Port:            port,
-		OutputDirectory: outputDir,
+		Port:             port,
+		OutputDirectory:  outputDir,
+		FileNameTemplate: t,
 	}
 }
 
 type ChromiumWrapper struct {
-	Port            int
-	OutputDirectory string
+	Port             int
+	OutputDirectory  string
+	FileNameTemplate *template.Template
 }
 
 func (c *ChromiumWrapper) DownloadPDF(documentId string, fileName string, fallbackOutput string) (string, error) {
+	outputDir := fallbackOutput
 	if len(c.OutputDirectory) > 0 {
-		fallbackOutput = c.OutputDirectory
+		outputDir = c.OutputDirectory
 	}
 
-	outputPath := path.Join(fallbackOutput, strings.TrimSuffix(fileName, filepath.Ext(fileName))+".pdf")
+	builder := strings.Builder{}
+	_ = c.FileNameTemplate.Execute(&builder, struct {
+		FileName      string
+		FileDirectory string
+	}{
+		FileName:      strings.TrimSuffix(fileName, filepath.Ext(fileName)),
+		FileDirectory: fallbackOutput,
+	})
+
+	outputPath := path.Join(outputDir, builder.String())
 
 	cmdContext, _ := context.WithDeadline(context.TODO(), time.Now().Add(Timeout))
 	cmd := exec.CommandContext(
 		cmdContext,
 		"chromium-browser",
 		"--no-sandbox",
-		"--disable-gpu",
 		"--virtual-time-budget=2000",
+		"--disable-gpu",
 		"--timeout=6000",
 		"--headless",
 		fmt.Sprintf("--print-to-pdf=%s", outputPath),

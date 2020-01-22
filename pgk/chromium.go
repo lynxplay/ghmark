@@ -30,7 +30,7 @@ type ChromiumWrapper struct {
 	OutputDirectory string
 }
 
-func (c *ChromiumWrapper) DownloadPDF(documentId int, fileName string, fallbackOutput string) (string, error) {
+func (c *ChromiumWrapper) DownloadPDF(documentId string, fileName string, fallbackOutput string) (string, error) {
 	if len(c.OutputDirectory) > 0 {
 		fallbackOutput = c.OutputDirectory
 	}
@@ -47,7 +47,7 @@ func (c *ChromiumWrapper) DownloadPDF(documentId int, fileName string, fallbackO
 		"--timeout=6000",
 		"--headless",
 		fmt.Sprintf("--print-to-pdf=%s", outputPath),
-		fmt.Sprintf("http://0.0.0.0:%d/%d", c.Port, documentId),
+		fmt.Sprintf("http://0.0.0.0:%d/%s", c.Port, documentId),
 	)
 	return outputPath, cmd.Run()
 }

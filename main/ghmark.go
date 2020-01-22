@@ -37,6 +37,9 @@ func main() {
 	server := pgk.NewGHServer(port)
 	server.Start()
 
+	nextRoutineID := 0
+	subRoutineIDLock := &sync.Mutex{}
+
 	files := os.Args
 	for i := 1; i < len(files); i++ {
 		filePath := files[i]
@@ -45,6 +48,11 @@ func main() {
 		go func() {
 			defer fileWG.Done()
 
+			subRoutineIDLock.Lock()
+			routineID := strconv.Itoa(nextRoutineID)
+			nextRoutineID += 1
+			subRoutineIDLock.Unlock()
+
 			fileDir := path.Dir(filePath)
 
 			fileContent, err := ioutil.ReadFile(filePath)
@@ -52,17 +60,19 @@ func main() {
 				fmt.Printf("could not read input file %s: %s\n", filePath, err.Error())
 			}
 
+			os.Geteuid()
+
 			compile, err := compiler.Compile(fileContent)
 
-			server.Mux.HandleFunc("/"+strconv.Itoa(i), func(writer http.ResponseWriter, request *http.Request) {
+			server.Mux.HandleFunc("/"+routineID, func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(200)
 				_, _ = writer.Write(compile)
 			})
 
-			if output, err := chromiumClient.DownloadPDF(i, path.Base(filePath), fileDir); err != nil {
+			if output, err := chromiumClient.DownloadPDF(routineID, path.Base(filePath), fileDir); err != nil {
 				fmt.Printf("could not download pdf for %s: %s\n", filePath, err.Error())
 			} else {
-				fmt.Printf("Compiled pdf file %s to %s", filePath, output)
+				fmt.Printf("Compiled pdf file %s to %s\n", filePath, output)
 			}
 		}()
 	}

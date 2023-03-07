@@ -3,12 +3,14 @@ module lynxplay/ghmark
 go 1.20
 
 require (
-	github.com/shurcooL/github_flavored_markdown v0.0.0-20181002035957-2122de532470
-	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa
+	github.com/shurcooL/github_flavored_markdown v0.0.0-20210228213109-c3a9aa474629
+	golang.org/x/net v0.8.0
 )
 
 require (
-	github.com/microcosm-cc/bluemonday v1.0.2 // indirect
+	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/gorilla/css v1.0.0 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.23 // indirect
 	github.com/russross/blackfriday v1.5.2 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shurcooL/go v0.0.0-20191216061654-b114cc39af9f // indirect
